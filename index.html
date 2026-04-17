@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Quest | For Sei</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Poppins:wght@300;400;600&display=swap');
+        
+        body { margin: 0; overflow: hidden; background: #020617; font-family: 'Poppins', sans-serif; color: white; touch-action: none; }
+        canvas { display: block; background: radial-gradient(circle, #1e1b4b, #020617); }
+        
+        .score-board { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; font-size: 22px; color: #fda4af; text-shadow: 0 0 10px #e11d48; font-weight: 600; }
+        .hint { position: absolute; bottom: 80px; width: 100%; text-align: center; font-size: 14px; opacity: 0.6; pointer-events: none; }
+
+        #letter-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 100; justify-content: center; align-items: center; }
+        .letter-container { background: #fffdfd; color: #312e81; padding: 35px; width: 85%; max-width: 450px; min-height: 480px; border-radius: 20px; position: relative; box-shadow: 0 0 40px rgba(99, 102, 241, 0.4); display: flex; flex-direction: column; animation: slideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        @keyframes slideUp { from { transform: translateY(100vh); } to { transform: translateY(0); } }
+        
+        .letter-content { flex-grow: 1; font-family: 'Dancing Script', cursive; font-size: 1.6rem; overflow-y: auto; text-align: center; display: flex; flex-direction: column; justify-content: center; line-height: 1.8; }
+        
+        .page-indicator { font-size: 12px; color: #6366f1; margin-top: 15px; font-family: 'Poppins'; text-align: center; }
+        .nav-buttons { display: flex; justify-content: space-between; margin-top: 20px; }
+        
+        .btn { background: #4338ca; color: white; border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; font-weight: 600; font-family: 'Poppins'; transition: 0.3s; }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #c7d2fe; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="score-board">Collect Hearts: <span id="score">0</span> / 10</div>
+    <div class="hint">Slide to catch the hearts! ❤️</div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="letter-modal">
+        <div class="letter-container">
+            <div id="page-content" class="letter-content"></div>
+            <div class="page-indicator" id="page-num">Page 1 of 4</div>
+            <div class="nav-buttons">
+                <button id="prevBtn" class="btn" onclick="prevPage()" disabled>Back</button>
+                <button id="nextBtn" class="btn" onclick="nextPage()">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let score = 0;
+        let gameActive = true;
+        let hearts = [];
+        let mouseX = canvas.width / 2;
+
+        // Pages without headings
+        const pages = [
+            `<p>Happy Birthday, Sei! 🎂<br><br>I wanted to do something a bit different for you today. You’ve had a long journey, and you’ve handled it all with so much grace. Here’s to celebrating the survivor in you.</p>`,
+            `<p>I know things haven't always been easy. You've faced battles that most people wouldn't understand. But look at where you are now—passing your exams and standing tall. I'm genuinely proud of you.</p>`,
+            `<p>Distance might be there, but my support for you is constant. Keep moving forward, keep being you, and never let anyone dull your spark. You deserve a great year ahead.<br><br>- Hari</p>`,
+            `<p>Don't keep a dull face... If you were ever to go missing, I would swim across the entire ocean just to come find you and make you laugh again!<br><br>So, can you have a small smile now?<br><br>Yeah... good girl! ✨</p>`
+        ];
+
+        let currentPage = 0;
+
+        function updateLetter() {
+            document.getElementById('page-content').innerHTML = pages[currentPage];
+            document.getElementById('page-num').innerText = `Page ${currentPage + 1} of 4`;
+            document.getElementById('prevBtn').disabled = currentPage === 0;
+            document.getElementById('nextBtn').innerText = currentPage === pages.length - 1 ? "Finish" : "Next Page";
+        }
+
+        function nextPage() {
+            if (currentPage < pages.length - 1) {
+                currentPage++;
+                updateLetter();
+            } else {
+                document.getElementById('letter-modal').style.display = 'none';
+                location.reload();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                updateLetter();
+            }
+        }
+
+        class Heart {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 40);
+                this.y = -50;
+                this.speed = 2.5 + Math.random() * 3.5;
+                this.size = 28 + Math.random() * 12;
+            }
+            draw() {
+                ctx.font = `${this.size}px Arial`;
+                ctx.fillText("❤️", this.x, this.y);
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > canvas.height - 70 && this.y < canvas.height - 40 && 
+                    this.x > mouseX - 55 && this.x < mouseX + 55) {
+                    score++;
+                    document.getElementById('score').innerText = score;
+                    this.y = canvas.height + 100;
+                    if (score === 10) { 
+                        gameActive = false; 
+                        setTimeout(showLetter, 500); 
+                    }
+                }
+            }
+        }
+
+        function showLetter() {
+            document.getElementById('letter-modal').style.display = 'flex';
+            updateLetter();
+        }
+
+        window.addEventListener('mousemove', (e) => mouseX = e.clientX);
+        window.addEventListener('touchmove', (e) => {
+            mouseX = e.touches[0].clientX;
+            e.preventDefault();
+        }, { passive: false });
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#6366f1";
+            ctx.fillStyle = "#6366f1";
+            ctx.fillRect(mouseX - 50, canvas.height - 50, 100, 12);
+            ctx.shadowBlur = 0;
+            
+            hearts.forEach((h, i) => {
+                h.update();
+                h.draw();
+                if (h.y > canvas.height) hearts.splice(i, 1);
+            });
+
+            if (gameActive) requestAnimationFrame(animate);
+        }
+
+        setInterval(() => {
+            if (gameActive) hearts.push(new Heart());
+        }, 850);
+
+        animate();
+    </script>
+</body>
+</html>
